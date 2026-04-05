@@ -11,6 +11,7 @@ module Phoenix
     getter topic : String
     getter state : State = State::Closed
     getter join_ref : String? = nil
+    property socket : Socket? = nil
 
     @params : JSON::Any
     @bindings = [] of Binding
