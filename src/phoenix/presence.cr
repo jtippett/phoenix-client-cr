@@ -47,7 +47,7 @@ module Phoenix
       current_state : ::JSON::Any,
       new_state : ::JSON::Any,
       on_join : Proc(String, ::JSON::Any?, ::JSON::Any, Nil),
-      on_leave : Proc(String, ::JSON::Any, ::JSON::Any, Nil)
+      on_leave : Proc(String, ::JSON::Any, ::JSON::Any, Nil),
     ) : ::JSON::Any
       joins = {} of String => ::JSON::Any
       leaves = {} of String => ::JSON::Any
@@ -99,7 +99,7 @@ module Phoenix
       state : ::JSON::Any,
       diff : ::JSON::Any,
       on_join : Proc(String, ::JSON::Any?, ::JSON::Any, Nil),
-      on_leave : Proc(String, ::JSON::Any, ::JSON::Any, Nil)
+      on_leave : Proc(String, ::JSON::Any, ::JSON::Any, Nil),
     ) : ::JSON::Any
       result = state.as_h?.try(&.clone) || {} of String => ::JSON::Any
 

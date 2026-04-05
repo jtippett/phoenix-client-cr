@@ -18,11 +18,11 @@ describe Phoenix::Serializer::Binary do
       bytes = result.as(Bytes)
 
       # Header: kind=0, join_ref_len=1, ref_len=1, topic_len=10, event_len=3
-      bytes[0].should eq(0u8) # push kind
-      bytes[1].should eq(1u8) # join_ref length
-      bytes[2].should eq(1u8) # ref length
+      bytes[0].should eq(0u8)  # push kind
+      bytes[1].should eq(1u8)  # join_ref length
+      bytes[2].should eq(1u8)  # ref length
       bytes[3].should eq(10u8) # "room:lobby" length
-      bytes[4].should eq(3u8) # "msg" length
+      bytes[4].should eq(3u8)  # "msg" length
     end
   end
 

@@ -5,7 +5,7 @@ describe Phoenix::Timer do
     it "calls the callback after the computed delay" do
       called = false
       timer = Phoenix::Timer.new(
-        callback: ->{ called = true },
+        callback: -> { called = true },
         timer_calc: ->(tries : Int32) { 1.millisecond },
       )
 
@@ -17,7 +17,7 @@ describe Phoenix::Timer do
     it "increments tries on each schedule" do
       recorded_tries = [] of Int32
       timer = Phoenix::Timer.new(
-        callback: ->{ },
+        callback: -> { },
         timer_calc: ->(tries : Int32) { recorded_tries << tries; 1.millisecond },
       )
 
@@ -33,7 +33,7 @@ describe Phoenix::Timer do
     it "resets the try count" do
       recorded_tries = [] of Int32
       timer = Phoenix::Timer.new(
-        callback: ->{ },
+        callback: -> { },
         timer_calc: ->(tries : Int32) { recorded_tries << tries; 1.millisecond },
       )
 

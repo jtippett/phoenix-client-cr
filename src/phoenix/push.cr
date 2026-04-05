@@ -19,7 +19,7 @@ module Phoenix
     def receive(status : String, &callback : JSON::Any ->) : self
       if status == "timeout"
         wrapped = callback
-        @timeout_hooks << ->{ wrapped.call(JSON::Any.new(nil)) }
+        @timeout_hooks << -> { wrapped.call(JSON::Any.new(nil)) }
       else
         @receive_hooks[status] ||= [] of Proc(JSON::Any, Nil)
         @receive_hooks[status] << callback

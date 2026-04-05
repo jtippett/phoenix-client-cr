@@ -29,7 +29,7 @@ module Phoenix
       @topic : String,
       @params : JSON::Any,
       @timeout : Time::Span = 10.seconds,
-      @rejoin_after : Proc(Int32, Time::Span) = Timer::DEFAULT_BACKOFF
+      @rejoin_after : Proc(Int32, Time::Span) = Timer::DEFAULT_BACKOFF,
     )
     end
 

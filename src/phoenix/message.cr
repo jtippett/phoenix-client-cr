@@ -11,7 +11,7 @@ module Phoenix
       @event : String,
       @payload : JSON::Any,
       @join_ref : String? = nil,
-      @ref : String? = nil
+      @ref : String? = nil,
     )
     end
 

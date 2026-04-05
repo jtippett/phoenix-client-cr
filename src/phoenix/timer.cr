@@ -11,7 +11,7 @@ module Phoenix
 
     def initialize(
       @callback : Proc(Nil),
-      @timer_calc : Proc(Int32, Time::Span)
+      @timer_calc : Proc(Int32, Time::Span),
     )
     end
 

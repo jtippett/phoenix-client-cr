@@ -39,7 +39,7 @@ describe Phoenix::Serializer::JSON do
 
   describe "#decode_text" do
     it "decodes a JSON array into a Message" do
-      raw = %([\"1\",\"2\",\"room:lobby\",\"phx_reply\",{\"status\":\"ok\"}])
+      raw = %(["1","2","room:lobby","phx_reply",{"status":"ok"}])
       msg = serializer.decode_text(raw)
 
       msg.join_ref.should eq("1")
@@ -50,7 +50,7 @@ describe Phoenix::Serializer::JSON do
     end
 
     it "handles null refs" do
-      raw = %([null,null,\"room:lobby\",\"broadcast\",{}])
+      raw = %([null,null,"room:lobby","broadcast",{}])
       msg = serializer.decode_text(raw)
 
       msg.join_ref.should be_nil

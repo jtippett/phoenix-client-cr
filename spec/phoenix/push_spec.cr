@@ -82,11 +82,11 @@ describe Phoenix::Push do
 
       push.trigger("ok", JSON.parse("{}"))
       push.trigger("ok", JSON.parse("{}"))
-      count.should eq(1)  # only fires once
+      count.should eq(1) # only fires once
 
       push.reset
       push.trigger("ok", JSON.parse("{}"))
-      count.should eq(2)  # fires again after reset
+      count.should eq(2) # fires again after reset
     end
   end
 end

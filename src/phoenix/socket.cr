@@ -34,11 +34,11 @@ module Phoenix
       reconnect_after : Proc(Int32, Time::Span) = Timer::DEFAULT_BACKOFF,
       @timeout : Time::Span = 10.seconds,
       @serializer : Serializer = Serializer::JSON.new,
-      @logger : ::Log? = nil
+      @logger : ::Log? = nil,
     )
       @params = params
       @reconnect_timer = Timer.new(
-        callback: ->{ reconnect },
+        callback: -> { reconnect },
         timer_calc: reconnect_after,
       )
     end
@@ -151,9 +151,9 @@ module Phoenix
     private def build_uri : URI
       uri = URI.parse(@endpoint)
       current_params = case p = @params
-                       when Hash   then p
-                       when Proc   then p.call
-                       else             {} of String => String
+                       when Hash then p
+                       when Proc then p.call
+                       else           {} of String => String
                        end
 
       query_parts = [] of String
