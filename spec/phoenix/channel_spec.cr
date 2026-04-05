@@ -137,4 +137,48 @@ describe Phoenix::Channel do
       ch.state.should eq(Phoenix::Channel::State::Joined)
     end
   end
+
+  describe "ClosedError" do
+    it "raises when pushing to a channel whose socket is disconnected" do
+      # Create a socket and channel, join, then disconnect the socket
+      socket = Phoenix::Socket.new("ws://localhost:4000/socket")
+      ch = socket.channel("room:lobby")
+      ch.join
+
+      # Simulate successful join so channel reaches Joined state
+      ch.trigger_join_reply(JSON.parse(%({"status": "ok", "response": {}})))
+      ch.state.should eq(Phoenix::Channel::State::Joined)
+
+      # Socket was never actually connected (@ws is nil), so connected? is false.
+      # Pushing should raise ClosedError.
+      socket.connected?.should be_false
+      expect_raises(Phoenix::ClosedError, "Cannot push to closed socket") do
+        ch.push("msg", JSON.parse(%({"body": "hello"})))
+      end
+    end
+
+    it "raises when pushing to a channel with no socket" do
+      ch = Phoenix::Channel.new("room:lobby", JSON.parse("{}"))
+      ch.join
+
+      # Simulate successful join
+      ch.trigger_join_reply(JSON.parse(%({"status": "ok", "response": {}})))
+      ch.state.should eq(Phoenix::Channel::State::Joined)
+
+      # Socket is nil, pushing should raise ClosedError
+      expect_raises(Phoenix::ClosedError) do
+        ch.push("msg", JSON.parse(%({"body": "hello"})))
+      end
+    end
+
+    it "buffers pushes when channel is not yet joined (no raise)" do
+      ch = Phoenix::Channel.new("room:lobby", JSON.parse("{}"))
+      ch.join
+      ch.state.should eq(Phoenix::Channel::State::Joining)
+
+      # Should not raise — pushes are buffered in non-Joined states
+      push = ch.push("msg", JSON.parse(%({"body": "buffered"})))
+      push.should be_a(Phoenix::Push)
+    end
+  end
 end
