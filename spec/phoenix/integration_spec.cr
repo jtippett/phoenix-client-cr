@@ -80,6 +80,48 @@ describe "Socket + Channel integration" do
     end
   end
 
+  it "fires push timeout when server does not reply" do
+    server = TestServer.new
+    # Server handles join but ignores all other messages (no reply)
+    server.start do |ws, msg|
+      parsed = JSON.parse(msg)
+      event = parsed[3].as_s
+
+      if event == "phx_join"
+        join_ref = parsed[0].as_s?
+        ref = parsed[1].as_s?
+        topic = parsed[2].as_s
+        reply = [join_ref, ref, topic, "phx_reply", {"status" => "ok", "response" => {} of String => String}]
+        ws.send(reply.to_json)
+      end
+      # All other events are intentionally ignored — no reply sent
+    end
+
+    begin
+      socket = Phoenix::Socket.new(
+        endpoint: server.ws_url,
+        heartbeat_interval: 30.seconds,
+      )
+      socket.connect
+      sleep 50.milliseconds
+
+      channel = socket.channel("room:test")
+      channel.join
+      sleep 100.milliseconds
+      channel.joined?.should be_true
+
+      timed_out = false
+      channel.push("no_reply_event", JSON.parse(%({"body": "hello"})), timeout: 100.milliseconds)
+        .receive("timeout") { |_| timed_out = true }
+
+      sleep 200.milliseconds
+      timed_out.should be_true
+    ensure
+      socket.try &.disconnect
+      server.stop
+    end
+  end
+
   it "receives broadcast events" do
     server = TestServer.new
     server.start do |ws, msg|

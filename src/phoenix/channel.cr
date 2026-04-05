@@ -85,6 +85,8 @@ module Phoenix
     def push(event : String, payload : JSON::Any, timeout : Time::Span = @timeout) : Push
       push = Push.new(event: event, payload: payload, timeout: timeout)
       if @state == State::Joined
+        sock = @socket
+        raise ClosedError.new unless sock && sock.connected?
         send_push(push)
       else
         @push_buffer << push
@@ -189,6 +191,13 @@ module Phoenix
           join_ref: @join_ref,
         )
         sock.push(msg)
+
+        # Schedule timeout so that push.receive("timeout") callbacks fire
+        # if the server never replies within the push's timeout window.
+        spawn do
+          sleep push.timeout
+          push.trigger_timeout
+        end
       end
     end
 
