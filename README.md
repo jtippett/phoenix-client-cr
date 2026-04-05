@@ -9,7 +9,7 @@ Add to your `shard.yml`:
 ```yaml
 dependencies:
   phoenix_client:
-    github: your-username/phoenix_client
+    github: jtippett/phoenix-client-cr
 ```
 
 Then run `shards install`.
@@ -266,6 +266,7 @@ Log levels used:
 See the [`examples/`](examples/) directory:
 
 - [`chat_client.cr`](examples/chat_client.cr) — minimal chat client
+- [`presence_tracker.cr`](examples/presence_tracker.cr) — real-time presence tracking
 
 ## Development
 

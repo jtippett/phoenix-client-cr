@@ -147,29 +147,27 @@ module Phoenix
       ::JSON::Any.new(result)
     end
 
+    private def join_callback : Proc(String, ::JSON::Any?, ::JSON::Any, Nil)
+      ->(key : String, cur : ::JSON::Any?, new_p : ::JSON::Any) {
+        @on_join_callbacks.each &.call(key, cur, new_p)
+        nil
+      }
+    end
+
+    private def leave_callback : Proc(String, ::JSON::Any, ::JSON::Any, Nil)
+      ->(key : String, cur : ::JSON::Any, left : ::JSON::Any) {
+        @on_leave_callbacks.each &.call(key, cur, left)
+        nil
+      }
+    end
+
     private def handle_state(new_state : ::JSON::Any) : Nil
       @state = Presence.sync_state(@state, new_state,
-        on_join: ->(key : String, cur : ::JSON::Any?, new_p : ::JSON::Any) {
-          @on_join_callbacks.each &.call(key, cur, new_p)
-          nil
-        },
-        on_leave: ->(key : String, cur : ::JSON::Any, left : ::JSON::Any) {
-          @on_leave_callbacks.each &.call(key, cur, left)
-          nil
-        },
-      )
+        on_join: join_callback, on_leave: leave_callback)
 
       @pending_diffs.each do |diff|
         @state = Presence.sync_diff(@state, diff,
-          on_join: ->(key : String, cur : ::JSON::Any?, new_p : ::JSON::Any) {
-            @on_join_callbacks.each &.call(key, cur, new_p)
-            nil
-          },
-          on_leave: ->(key : String, cur : ::JSON::Any, left : ::JSON::Any) {
-            @on_leave_callbacks.each &.call(key, cur, left)
-            nil
-          },
-        )
+          on_join: join_callback, on_leave: leave_callback)
       end
       @pending_diffs.clear
       @join_ref = @channel.join_ref
@@ -182,15 +180,7 @@ module Phoenix
         @pending_diffs << diff
       else
         @state = Presence.sync_diff(@state, diff,
-          on_join: ->(key : String, cur : ::JSON::Any?, new_p : ::JSON::Any) {
-            @on_join_callbacks.each &.call(key, cur, new_p)
-            nil
-          },
-          on_leave: ->(key : String, cur : ::JSON::Any, left : ::JSON::Any) {
-            @on_leave_callbacks.each &.call(key, cur, left)
-            nil
-          },
-        )
+          on_join: join_callback, on_leave: leave_callback)
         @on_sync_callbacks.each &.call
       end
     end
