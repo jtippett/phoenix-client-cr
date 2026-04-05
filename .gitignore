@@ -1,0 +1,7 @@
+.claude/
+.DS_Store
+/docs/
+/lib/
+/bin/
+/.shards/
+*.dwarf

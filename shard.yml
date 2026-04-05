@@ -1,0 +1,6 @@
+name: phoenix_client
+version: 0.1.0
+description: Crystal client for Phoenix Framework channels and sockets
+license: MIT
+
+crystal: ">= 1.0.0"
