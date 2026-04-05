@@ -40,3 +40,5 @@ module Phoenix
     end
   end
 end
+
+require "./serializer/binary"
