@@ -61,6 +61,7 @@ module Phoenix
 
           @open_entries.each &.callback.call
           @reconnect_timer.reset
+          trigger_channel_rejoins
           start_heartbeat
 
           ws.run
@@ -199,6 +200,10 @@ module Phoenix
       @close_entries.each &.callback.call(code.try(&.to_u16), reason)
       @channels.each &.trigger_error("connection closed")
       schedule_reconnect unless @explicitly_disconnected
+    end
+
+    private def trigger_channel_rejoins : Nil
+      @channels.each(&.rejoin)
     end
 
     private def schedule_reconnect : Nil

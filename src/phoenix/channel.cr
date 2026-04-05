@@ -152,6 +152,19 @@ module Phoenix
       trigger(Message::CHANNEL_EVENTS[:error], JSON.parse(%({"reason": "#{reason}"})))
     end
 
+    # Called by Socket after reconnecting to re-join channels that were
+    # previously joined or errored.  Does nothing if the user explicitly
+    # left or never joined.
+    def rejoin : Nil
+      return if @state.closed? || @state.leaving?
+
+      if push = @join_push
+        push.reset
+        @state = State::Joining
+        send_push(push)
+      end
+    end
+
     # Main message dispatcher called by Socket
     def handle_message(msg : Message) : Nil
       if msg.reply_event?

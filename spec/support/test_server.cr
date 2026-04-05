@@ -6,6 +6,10 @@ class TestServer
   getter received_messages = [] of String
   @server : HTTP::Server? = nil
   @connections = [] of HTTP::WebSocket
+  @bind_port : Int32
+
+  def initialize(@bind_port : Int32 = 0)
+  end
 
   def start(&on_message : HTTP::WebSocket, String ->) : Nil
     handler = HTTP::WebSocketHandler.new do |ws, ctx|
@@ -16,7 +20,7 @@ class TestServer
       end
     end
     @server = server = HTTP::Server.new(handler)
-    addr = server.bind_tcp("127.0.0.1", 0) # 0 = random available port
+    addr = server.bind_tcp("127.0.0.1", @bind_port, reuse_port: true)
     @port = addr.port
     spawn { server.listen }
     Fiber.yield # let server start
@@ -33,7 +37,9 @@ class TestServer
 
   def stop : Nil
     @connections.each { |ws| ws.close rescue nil }
-    @server.try &.close
+    @server.try do |s|
+      s.close rescue nil
+    end
   end
 
   def ws_url(path = "/socket/websocket") : String

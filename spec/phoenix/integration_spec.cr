@@ -122,6 +122,60 @@ describe "Socket + Channel integration" do
     end
   end
 
+  it "auto-rejoins channels after socket reconnect" do
+    join_handler = ->(ws : HTTP::WebSocket, msg : String) {
+      parsed = JSON.parse(msg)
+      join_ref = parsed[0].as_s?
+      ref = parsed[1].as_s?
+      topic = parsed[2].as_s
+      event = parsed[3].as_s
+
+      if event == "phx_join"
+        reply = [join_ref, ref, topic, "phx_reply", {"status" => "ok", "response" => {} of String => String}]
+        ws.send(reply.to_json)
+      end
+    }
+
+    server = TestServer.new
+    server.start(&join_handler)
+    port = server.port
+
+    begin
+      socket = Phoenix::Socket.new(
+        endpoint: server.ws_url,
+        heartbeat_interval: 30.seconds,
+        reconnect_after: ->(tries : Int32) : Time::Span { 50.milliseconds },
+      )
+      socket.connect
+      sleep 50.milliseconds
+
+      channel = socket.channel("room:test")
+      channel.join
+      sleep 100.milliseconds
+      channel.joined?.should be_true
+
+      # Stop server to simulate disconnect
+      server.stop
+      sleep 100.milliseconds
+
+      # Channel should be in Errored state after disconnect
+      channel.state.should eq(Phoenix::Channel::State::Errored)
+
+      # Start a new server on the same port so the reconnect succeeds
+      server2 = TestServer.new(port)
+      server2.start(&join_handler)
+
+      # Wait for reconnect + rejoin (reconnect_after is 50ms)
+      sleep 500.milliseconds
+
+      channel.joined?.should be_true
+    ensure
+      socket.try &.disconnect
+      server.stop
+      server2.try &.stop
+    end
+  end
+
   it "receives broadcast events" do
     server = TestServer.new
     server.start do |ws, msg|

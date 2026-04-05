@@ -138,6 +138,71 @@ describe Phoenix::Channel do
     end
   end
 
+  describe "#rejoin" do
+    it "re-sends phx_join and transitions to Joining from Errored state" do
+      socket = Phoenix::Socket.new("ws://localhost:4000/socket")
+      ch = socket.channel("room:lobby")
+      ch.join
+      ch.trigger_join_reply(JSON.parse(%({"status": "ok", "response": {}})))
+      ch.state.should eq(Phoenix::Channel::State::Joined)
+
+      # Simulate error (e.g. socket disconnect)
+      ch.trigger_error("connection closed")
+      ch.state.should eq(Phoenix::Channel::State::Errored)
+
+      # Rejoin should transition to Joining
+      ch.rejoin
+      ch.state.should eq(Phoenix::Channel::State::Joining)
+    end
+
+    it "re-sends phx_join and transitions to Joining from Joined state" do
+      socket = Phoenix::Socket.new("ws://localhost:4000/socket")
+      ch = socket.channel("room:lobby")
+      ch.join
+      ch.trigger_join_reply(JSON.parse(%({"status": "ok", "response": {}})))
+      ch.state.should eq(Phoenix::Channel::State::Joined)
+
+      ch.rejoin
+      ch.state.should eq(Phoenix::Channel::State::Joining)
+    end
+
+    it "does nothing when state is Closed" do
+      ch = Phoenix::Channel.new("room:lobby", JSON.parse("{}"))
+      ch.state.should eq(Phoenix::Channel::State::Closed)
+
+      ch.rejoin
+      ch.state.should eq(Phoenix::Channel::State::Closed)
+    end
+
+    it "does nothing when state is Leaving" do
+      ch = Phoenix::Channel.new("room:lobby", JSON.parse("{}"))
+      ch.join
+      ch.trigger_join_reply(JSON.parse(%({"status": "ok", "response": {}})))
+      ch.leave
+      ch.state.should eq(Phoenix::Channel::State::Leaving)
+
+      ch.rejoin
+      ch.state.should eq(Phoenix::Channel::State::Leaving)
+    end
+
+    it "transitions back to Joined after successful rejoin reply" do
+      socket = Phoenix::Socket.new("ws://localhost:4000/socket")
+      ch = socket.channel("room:lobby")
+      ch.join
+      ch.trigger_join_reply(JSON.parse(%({"status": "ok", "response": {}})))
+
+      ch.trigger_error("connection closed")
+      ch.state.should eq(Phoenix::Channel::State::Errored)
+
+      ch.rejoin
+      ch.state.should eq(Phoenix::Channel::State::Joining)
+
+      # Simulate successful rejoin reply
+      ch.trigger_join_reply(JSON.parse(%({"status": "ok", "response": {}})))
+      ch.state.should eq(Phoenix::Channel::State::Joined)
+    end
+  end
+
   describe "ClosedError" do
     it "raises when pushing to a channel whose socket is disconnected" do
       # Create a socket and channel, join, then disconnect the socket
