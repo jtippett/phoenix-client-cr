@@ -8,17 +8,24 @@ module Phoenix
   class Serializer::JSON < Serializer
     def encode(msg : Message) : String | Bytes
       String.build do |str|
-        str << '['
-        msg.join_ref ? str << '"' << msg.join_ref << '"' : str << "null"
-        str << ','
-        msg.ref ? str << '"' << msg.ref << '"' : str << "null"
-        str << ','
-        str << '"' << msg.topic << '"'
-        str << ','
-        str << '"' << msg.event << '"'
-        str << ','
-        msg.payload.to_json(str)
-        str << ']'
+        builder = ::JSON::Builder.new(str)
+        builder.document do
+          builder.array do
+            if jr = msg.join_ref
+              builder.string(jr)
+            else
+              builder.null
+            end
+            if r = msg.ref
+              builder.string(r)
+            else
+              builder.null
+            end
+            builder.string(msg.topic)
+            builder.string(msg.event)
+            builder.raw(msg.payload.to_json)
+          end
+        end
       end
     end
 

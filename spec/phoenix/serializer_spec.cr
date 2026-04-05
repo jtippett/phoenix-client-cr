@@ -23,6 +23,24 @@ describe Phoenix::Serializer::JSON do
       parsed[4]["user"].as_s.should eq("alice")
     end
 
+    it "properly escapes special characters in fields" do
+      msg = Phoenix::Message.new(
+        join_ref: "ref\"with\\quotes",
+        ref: "ref\nwith\nnewlines",
+        topic: "room:\"lobby\"",
+        event: "phx_join\\event",
+        payload: JSON.parse(%({"key": "val"})),
+      )
+
+      result = serializer.encode(msg)
+      result.should be_a(String)
+      parsed = JSON.parse(result.as(String))
+      parsed[0].as_s.should eq("ref\"with\\quotes")
+      parsed[1].as_s.should eq("ref\nwith\nnewlines")
+      parsed[2].as_s.should eq("room:\"lobby\"")
+      parsed[3].as_s.should eq("phx_join\\event")
+    end
+
     it "encodes nil refs as JSON null" do
       msg = Phoenix::Message.new(
         topic: "room:lobby",
