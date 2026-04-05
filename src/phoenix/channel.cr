@@ -21,6 +21,7 @@ module Phoenix
     @binding_ref = 0
     @timeout : Time::Span
     @rejoin_timer : Timer? = nil
+    @pending_pushes = {} of String => Push
 
     private record Binding, event : String, ref : Int32, callback : Proc(JSON::Any, Nil)
 
@@ -56,6 +57,7 @@ module Phoenix
         @state = State::Errored
       end
 
+      send_push(push)
       push
     end
 
@@ -76,13 +78,14 @@ module Phoenix
         @state = State::Closed
       end
 
+      send_push(push)
       push
     end
 
     def push(event : String, payload : JSON::Any, timeout : Time::Span = @timeout) : Push
       push = Push.new(event: event, payload: payload, timeout: timeout)
       if @state == State::Joined
-        # Will be sent by socket when wired up
+        send_push(push)
       else
         @push_buffer << push
       end
@@ -150,14 +153,47 @@ module Phoenix
     # Main message dispatcher called by Socket
     def handle_message(msg : Message) : Nil
       if msg.reply_event?
-        trigger_join_reply(msg.payload) if msg.ref == @join_push.try(&.ref)
+        if msg.ref == @join_push.try(&.ref)
+          trigger_join_reply(msg.payload)
+        elsif ref = msg.ref
+          # Route reply to the pending push that sent it
+          if push = @pending_pushes.delete(ref)
+            status = msg.payload["status"]?.try(&.as_s?) || "error"
+            response = msg.payload["response"]? || JSON::Any.new({} of String => JSON::Any)
+            push.trigger(status, response)
+          end
+        end
       else
         trigger(msg.event, msg.payload, msg.ref)
       end
     end
 
+    private def send_push(push : Push) : Nil
+      if sock = @socket
+        ref = sock.make_ref
+        push.ref = ref
+
+        # Track join_ref for the channel
+        if push.event == Message::CHANNEL_EVENTS[:join]
+          @join_ref = ref
+        end
+
+        # Track the push so we can route replies back to it
+        @pending_pushes[ref] = push
+
+        msg = Message.new(
+          topic: @topic,
+          event: push.event,
+          payload: push.payload,
+          ref: ref,
+          join_ref: @join_ref,
+        )
+        sock.push(msg)
+      end
+    end
+
     private def flush_push_buffer : Nil
-      @push_buffer.each { |push| } # sending handled when wired to socket
+      @push_buffer.each { |push| send_push(push) }
       @push_buffer.clear
     end
   end
